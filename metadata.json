@@ -1,0 +1,7 @@
+{
+  "name": "Bio Operational Intelligent",
+  "description": "Analytics and AI-assistance dashboard for an anaerobic digestion biogas plant.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
