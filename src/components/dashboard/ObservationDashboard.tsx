@@ -46,22 +46,41 @@ export default function ObservationDashboard() {
     return () => clearInterval(interval);
   }, [anomaly]);
 
+  // Alarm Logic
+  let alarmStatus = 'normal';
+  let alarmMessage = 'System operating within optimal parameters.';
+  
+  if (livePH < 6.8 || livePH > 7.5) {
+    alarmStatus = 'critical';
+    alarmMessage = `CRITICAL: pH level (${livePH.toFixed(2)}) is outside the optimal range (6.8 - 7.5)!`;
+  } else if (livePH < 6.9 || livePH > 7.4) {
+    alarmStatus = 'warning';
+    alarmMessage = `WARNING: pH level (${livePH.toFixed(2)}) is approaching limits.`;
+  }
+
+  if (liveTemp < 30 || liveTemp > 37) {
+    alarmStatus = 'critical';
+    alarmMessage = `CRITICAL: Temperature (${liveTemp.toFixed(1)}°C) is outside mesophilic range (30-37°C)!`;
+  } else if (liveTemp < 31 || liveTemp > 36) {
+    alarmStatus = alarmStatus === 'critical' ? 'critical' : 'warning';
+    if (alarmStatus === 'warning') alarmMessage = `WARNING: Temperature (${liveTemp.toFixed(1)}°C) is approaching limits.`;
+  }
+
   const generateSummary = async () => {
     setLoading(true);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Generate a professional executive summary for management regarding a 2-month pilot anaerobic digestion biogas plant. 
-        Key data points:
-        - Current Processing: 30-40kg Daily Average (5 buckets @ 6kg each)
-        - Gas Production: +2.5% trend, 82 m³ Daily Output
-        - Methane Content: Reached 65% (Optimal)
-        - Carbon Offset: 72 t Annual Savings
-        - LPG Replaced: ~2 cylinders/day (720 kg/year)
-        - Incident: pH dipped on Day 12 due to 'sour' food waste. Corrected by reducing feed for 24 hours and adding lime buffer.
-        - Temperature: Consistent mesophilic range (30-37°C) due to Chennai's warm climate.
-        Keep it concise, professional, and highlight overall stability and ROI potential.`,
+        contents: `Generate a very short, up-to-date executive summary (max 2-3 sentences or bullet points) for management regarding our anaerobic digestion biogas plant. 
+        Current Live Data:
+        - Live pH: ${livePH.toFixed(2)}
+        - Live Temperature: ${liveTemp.toFixed(1)}°C
+        - Processing: 30-40kg Daily Average
+        - Gas Production: 82 m³ Daily Output (65% Methane)
+        - Current Alarm Status: ${alarmStatus.toUpperCase()}
+        
+        Focus on the current real-time status, immediate operational health, and overall stability. Keep it extremely concise, professional, and actionable.`,
       });
       setSummary(response.text || 'Failed to generate summary.');
     } catch (error) {
@@ -85,29 +104,39 @@ export default function ObservationDashboard() {
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };
 
-  // Alarm Logic
-  let alarmStatus = 'normal';
-  let alarmMessage = 'System operating within optimal parameters.';
-  
-  if (livePH < 6.8 || livePH > 7.5) {
-    alarmStatus = 'critical';
-    alarmMessage = `CRITICAL: pH level (${livePH.toFixed(2)}) is outside the optimal range (6.8 - 7.5)!`;
-  } else if (livePH < 6.9 || livePH > 7.4) {
-    alarmStatus = 'warning';
-    alarmMessage = `WARNING: pH level (${livePH.toFixed(2)}) is approaching limits.`;
-  }
-
-  if (liveTemp < 30 || liveTemp > 37) {
-    alarmStatus = 'critical';
-    alarmMessage = `CRITICAL: Temperature (${liveTemp.toFixed(1)}°C) is outside mesophilic range (30-37°C)!`;
-  } else if (liveTemp < 31 || liveTemp > 36) {
-    alarmStatus = alarmStatus === 'critical' ? 'critical' : 'warning';
-    if (alarmStatus === 'warning') alarmMessage = `WARNING: Temperature (${liveTemp.toFixed(1)}°C) is approaching limits.`;
-  }
-
   // Visual Positions
   const phPosition = Math.min(Math.max(((livePH - 6.0) / (8.0 - 6.0)) * 100, 0), 100);
   const tempPosition = Math.min(Math.max(((liveTemp - 20) / (50 - 20)) * 100, 0), 100);
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const dataPoint = payload[0].payload;
+      return (
+        <div className="bg-white p-3 border border-slate-200 shadow-md rounded-lg max-w-[200px]">
+          <p className="font-semibold text-slate-900 mb-1">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }} className="text-sm">
+              {entry.name}: {entry.value}
+            </p>
+          ))}
+          {dataPoint.event && (
+            <div className="mt-2 pt-2 border-t border-slate-100">
+              <p className="text-xs font-bold text-red-500 flex items-center gap-1 mb-1">
+                <AlertTriangle className="h-3 w-3" /> Event: {dataPoint.event}
+              </p>
+              {dataPoint.event === 'pH Dip' && (
+                <div className="text-[10px] text-slate-600 space-y-1 leading-tight">
+                  <p><strong className="text-slate-700">Cause:</strong> Overfeeding or sour food waste.</p>
+                  <p><strong className="text-slate-700">Action:</strong> Reduce feed for 24h, add lime buffer.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <motion.div 
@@ -273,9 +302,7 @@ export default function ObservationDashboard() {
                     <XAxis dataKey="day" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis yAxisId="left" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
+                    <Tooltip content={<CustomTooltip />} />
                     <Legend />
                     <Line yAxisId="left" type="monotone" name="Input (kg)" dataKey="input" stroke="#1A202C" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                     <Line yAxisId="right" type="monotone" name="Output (m³)" dataKey="output" stroke="#00E676" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />

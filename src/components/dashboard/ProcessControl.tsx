@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { CheckCircle2, AlertTriangle, Settings2, Power, Send, Mic, Sparkles, Loader2, StopCircle, CalendarClock, Plus, Trash2, Circle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Settings2, Power, Send, Mic, Sparkles, Loader2, StopCircle, CalendarClock, Plus, Trash2, Circle, X, ChevronRight } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function ProcessControl() {
   const [holidayMode, setHolidayMode] = useState(false);
   const [chatInput, setChatInput] = useState('');
+  const [isTroubleshootingModalOpen, setIsTroubleshootingModalOpen] = useState(false);
   
   const initialMessage = { role: 'ai' as const, text: 'Hello! I am your AI Maintenance Assistant. Ask me troubleshooting questions (e.g., "Why is gas production low?") and get engineering advice.' };
   const [messages, setMessages] = useState<{role: 'user' | 'ai', text: string}[]>([initialMessage]);
@@ -256,13 +257,17 @@ export default function ProcessControl() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5, duration: 0.5 }}
-                  className="rounded-lg bg-emerald-50 p-4 border border-emerald-100 shadow-sm"
+                  onClick={() => setIsTroubleshootingModalOpen(true)}
+                  className="rounded-lg bg-emerald-50 p-4 border border-emerald-100 shadow-sm cursor-pointer hover:bg-emerald-100/50 transition-colors group"
                 >
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-                    <p className="text-sm text-emerald-800 leading-relaxed">
-                      System health prediction: <span className="font-bold">Stable</span>. Current sensor data indicates optimal methanogenesis. No immediate maintenance required.
-                    </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <Sparkles className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                      <p className="text-sm text-emerald-800 leading-relaxed">
+                        System health prediction: <span className="font-bold">Stable</span>. Current sensor data indicates optimal methanogenesis. No immediate maintenance required.
+                      </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5 group-hover:text-emerald-600 transition-colors" />
                   </div>
                 </motion.div>
               </div>
@@ -419,6 +424,58 @@ export default function ProcessControl() {
           </CardContent>
         </Card>
       </motion.div>
+
+      <AnimatePresence>
+        {isTroubleshootingModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50">
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-emerald-500" />
+                  System Health: Stable
+                </h3>
+                <Button variant="ghost" size="icon" onClick={() => setIsTroubleshootingModalOpen(false)} className="h-8 w-8 rounded-full">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-slate-600">
+                  The system is currently operating under optimal conditions. Methanogenesis is stable and gas production is nominal. However, to maintain this state, follow these standard operating procedures:
+                </p>
+                
+                <div className="space-y-3 mt-4">
+                  {[
+                    { title: 'Monitor VFA/Alkalinity', desc: 'Ensure the ratio remains below 0.3. Test daily.' },
+                    { title: 'Consistent Feeding', desc: 'Maintain the daily feeding schedule without sudden spikes in volume.' },
+                    { title: 'Temperature Check', desc: 'Verify digester temperature remains constant (typically 35-37°C for mesophilic).' },
+                    { title: 'Visual Inspection', desc: 'Check for any leaks or unusual odors around the digester and gas holder.' }
+                  ].map((step, i) => (
+                    <div key={i} className="flex gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xs font-bold">
+                        {i + 1}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-900">{step.title}</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">{step.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <Button onClick={() => setIsTroubleshootingModalOpen(false)} className="bg-slate-900 text-white hover:bg-slate-800">
+                  Acknowledge
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
