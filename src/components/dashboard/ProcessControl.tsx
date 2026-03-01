@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { CheckCircle2, AlertTriangle, Settings2, Power, Send, Mic, Sparkles, Loader2, StopCircle, CalendarClock, Plus, Trash2, Circle } from 'lucide-react';
@@ -8,11 +8,27 @@ import { motion } from 'motion/react';
 export default function ProcessControl() {
   const [holidayMode, setHolidayMode] = useState(false);
   const [chatInput, setChatInput] = useState('');
-  const [messages, setMessages] = useState<{role: 'user' | 'ai', text: string}[]>([
-    { role: 'ai', text: 'Hello! I am your AI Maintenance Assistant. Ask me troubleshooting questions (e.g., "Why is gas production low?") and get engineering advice.' }
-  ]);
+  
+  const initialMessage = { role: 'ai' as const, text: 'Hello! I am your AI Maintenance Assistant. Ask me troubleshooting questions (e.g., "Why is gas production low?") and get engineering advice.' };
+  const [messages, setMessages] = useState<{role: 'user' | 'ai', text: string}[]>([initialMessage]);
+  
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Auto-clear chat after 1 hour of inactivity
+  useEffect(() => {
+    if (messages.length <= 1) return; // Don't clear if it's just the initial message
+    
+    const timeoutId = setTimeout(() => {
+      setMessages([initialMessage]);
+    }, 3600000); // 1 hour in milliseconds
+    
+    return () => clearTimeout(timeoutId);
+  }, [messages]);
+
+  const clearChat = () => {
+    setMessages([initialMessage]);
+  };
   
   // Maintenance Reminders State
   const [reminders, setReminders] = useState([
@@ -317,12 +333,23 @@ export default function ProcessControl() {
 
       <motion.div variants={itemVariants}>
         <Card className="border-[#2979FF]/20 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
-            <CardTitle className="text-lg flex items-center gap-2 text-[#2979FF]">
-              <Sparkles className="h-5 w-5" />
-              AI Maintenance Assistant
-            </CardTitle>
-            <CardDescription>Ask troubleshooting questions and get engineering advice</CardDescription>
+          <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
+            <div className="space-y-1.5">
+              <CardTitle className="text-lg flex items-center gap-2 text-[#2979FF]">
+                <Sparkles className="h-5 w-5" />
+                AI Maintenance Assistant
+              </CardTitle>
+              <CardDescription>Ask troubleshooting questions and get engineering advice</CardDescription>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={clearChat}
+              className="text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="Clear chat history"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent className="p-0">
             <div className="flex flex-col h-[400px]">

@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
 import ObservationDashboard from './components/dashboard/ObservationDashboard';
 import ProcessControl from './components/dashboard/ProcessControl';
 import ScalingModel from './components/dashboard/ScalingModel';
+import NotificationCenter from './components/dashboard/NotificationCenter';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -48,15 +49,17 @@ export default function App() {
           >
             <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-slate-200 bg-white shadow-sm">
               <img 
-                src="https://api.dicebear.com/7.x/bottts/svg?seed=aimachina&backgroundColor=ffffff" 
+                src="/logo.png" 
                 alt="AI Machina Society Logo" 
                 className="h-full w-full object-cover"
-                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.src = "https://api.dicebear.com/7.x/bottts/svg?seed=AI-MACHINA-SOCIETY&backgroundColor=ffffff";
+                }}
               />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight text-slate-900">Bio operational intelegent</h1>
-              <p className="text-xs font-medium text-[#2979FF]">by AI machina society</p>
+              <h1 className="text-lg font-bold leading-tight text-slate-900">Bio Operational Intelligent</h1>
+              <p className="text-xs font-medium text-[#2979FF]">by AI Machina Society</p>
             </div>
           </motion.div>
           
@@ -75,6 +78,7 @@ export default function App() {
               </span>
               <span className="text-xs font-semibold text-emerald-700">System working</span>
             </div>
+            <NotificationCenter />
           </motion.div>
         </div>
       </header>
